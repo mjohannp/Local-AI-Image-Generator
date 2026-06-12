@@ -131,6 +131,19 @@ function getCpuUsagePercent() {
 function getGpuInfo() {
   if (cachedGpuInfo) return cachedGpuInfo;
 
+  if (osPlatform === "darwin") {
+    try {
+      const output = execSync(
+        "system_profiler SPDisplaysDataType 2>/dev/null | grep 'Chipset Model' | head -1 | sed 's/.*: //' | xargs",
+        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+      ).trim();
+      if (output) {
+        cachedGpuInfo = { name: output };
+        return cachedGpuInfo;
+      }
+    } catch (_) {}
+  }
+
   if (osPlatform === "win32") {
     try {
       const output = execSync(
@@ -214,6 +227,29 @@ function pollNvidiaVram(force = false) {
 // Start background VRAM polling (runs every 5 seconds, only active when backend is idle)
 setInterval(() => pollNvidiaVram(false), 5000);
 pollNvidiaVram(true);
+
+// macOS unified memory polling
+if (osPlatform === "darwin") {
+  setInterval(() => {
+    if (backendProc !== null) return;
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+    const gpuInfo = getGpuInfo();
+    cachedVramInfo = {
+      gpu_name: gpuInfo.name,
+      vram_used_gb: roundGb(usedMem),
+      vram_total_gb: roundGb(totalMem),
+    };
+  }, 5000);
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  cachedVramInfo = {
+    gpu_name: getGpuInfo().name,
+    vram_used_gb: roundGb(totalMem - freeMem),
+    vram_total_gb: roundGb(totalMem),
+  };
+}
 
 function getNvidiaVram() {
   return cachedVramInfo;
@@ -524,9 +560,12 @@ function getBackendOptions() {
     osPlatform === "win32" ? BACKEND_PATHS.vulkan : BACKEND_PATHS.linux,
     "vulkan"
   );
+  const metalInstalled = osPlatform === "darwin" && fs.existsSync(BACKEND_PATHS.mac);
+  const metalAvailable = metalInstalled && backendAccepts(BACKEND_PATHS.mac, "metal");
   const options = [{ id: "cpu", label: "CPU", available: true }];
   if (vulkanAvailable) options.push({ id: "vulkan", label: "Vulkan GPU", available: true });
   if (cudaAvailable) options.push({ id: "cuda", label: "CUDA GPU", available: true });
+  if (metalAvailable) options.push({ id: "metal", label: "Metal GPU", available: true });
   const unavailable = [];
   if (vulkanInstalled && !vulkanAvailable) {
     unavailable.push({ id: "vulkan", label: "Vulkan GPU", reason: "Installed, but this binary did not register a Vulkan backend on this machine." });
@@ -534,15 +573,20 @@ function getBackendOptions() {
   if (cudaInstalled && !cudaAvailable) {
     unavailable.push({ id: "cuda", label: "CUDA GPU", reason: "Installed, but CUDA backend validation failed." });
   }
+  if (metalInstalled && !metalAvailable) {
+    unavailable.push({ id: "metal", label: "Metal GPU", reason: "Installed, but Metal backend validation failed." });
+  }
   let defaultBackend = "cpu";
   if (cudaAvailable) {
     const gpuName = String(getGpuInfo().name).toLowerCase();
     const isGtxCard = gpuName.includes("gtx");
     if (isGtxCard && vulkanAvailable) {
-      defaultBackend = "vulkan"; // Default to Vulkan for GTX cards because of lack of Tensor Cores
+      defaultBackend = "vulkan";
     } else {
       defaultBackend = "cuda";
     }
+  } else if (metalAvailable) {
+    defaultBackend = "metal";
   } else if (vulkanAvailable) {
     defaultBackend = "vulkan";
   }
@@ -552,6 +596,7 @@ function getBackendOptions() {
     unavailable,
     cudaAvailable,
     vulkanAvailable,
+    metalAvailable,
     defaultBackendType: defaultBackend,
   };
   return cachedBackendOptions;
@@ -584,6 +629,9 @@ function selectBackendPath(useGpu, backendType = "auto") {
   if (osPlatform === "win32" && fs.existsSync(BACKEND_PATHS.vulkan)) {
     return BACKEND_PATHS.vulkan;
   }
+  if (osPlatform === "darwin" && fs.existsSync(BACKEND_PATHS.mac)) {
+    return BACKEND_PATHS.mac;
+  }
   return BACKEND_PATH;
 }
 
@@ -596,6 +644,7 @@ function resolveBackendType(useGpu, backendType = "auto") {
 
 function getBackendMode(backendPath, useGpu, backendType = "auto") {
   if (useGpu === false || backendType === "cpu") return "CPU";
+  if (backendType === "metal") return "Metal GPU";
   const name = path.basename(backendPath || "").toLowerCase();
   if (name.includes("cuda")) return "CUDA GPU";
   if (name.includes("vulkan")) return "Vulkan GPU";
@@ -764,6 +813,13 @@ async function startBackend(settings = {}) {
       "--rng", "cuda",
       "--sampler-rng", "cuda",
     );
+  } else if (requestedBackend === "metal") {
+    args.push(
+      "--backend", "metal",
+      "--params-backend", "metal",
+      "--rng", "cpu",
+      "--sampler-rng", "cpu",
+    );
   }
 
   if (currentSettings.vaeTiling) {
@@ -872,6 +928,10 @@ async function startBackend(settings = {}) {
     if (cleanOutput.includes("ggml_vulkan")) {
       backendLoadState.backendMode = "Vulkan GPU";
       currentSettings.backendMode = "Vulkan GPU";
+    }
+    if (cleanOutput.includes("ggml_metal") || (cleanOutput.includes("Metal ") && cleanOutput.includes("ggml"))) {
+      backendLoadState.backendMode = "Metal GPU";
+      currentSettings.backendMode = "Metal GPU";
     }
     if (cleanOutput.includes("[ERROR]")) {
       const nextError = describeBackendError(cleanOutput.trim(), currentSettings.model);

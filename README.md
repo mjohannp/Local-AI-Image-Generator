@@ -22,14 +22,21 @@
 ---
 
 ## 📖 Overview
-**Local AI Image Generator** is a zero-configuration, portable desktop environment for running Stable Diffusion (Safetensors/GGUF/CKPT) offline on Windows. Double-clicking `start.bat` automatically handles dependency setup, GPU backend matching (CUDA/Vulkan), and launches a high-performance local web workspace.
+**Local AI Image Generator** is a zero-configuration, portable desktop environment for running Stable Diffusion (Safetensors/GGUF/CKPT) offline on **Windows** and **macOS (Apple Silicon)**. Double-clicking `start.bat` automatically handles dependency setup, GPU backend matching (CUDA/Vulkan/Metal), and launches a high-performance local web workspace.
 
 ---
 
 ## ⚡ Quick Start
+
+### Windows
 1. **Launch:** Double-click **`start.bat`** (downloads portable Node.js and pre-compiled GPU backend binaries on first run).
 2. **Add Models:** Drop `.safetensors`, `.gguf`, or `.ckpt` weights into `app/models/` (or download them via the **Model Manager** tab in the UI).
 3. **Generate:** Open `http://localhost:1420` in your browser, select your model, and write a prompt.
+
+### macOS (Apple Silicon)
+1. **Launch:** Open Terminal, navigate to the project folder, and run `./start.sh` (downloads portable Node.js and Metal backend binary on first run).
+2. **Add Models:** Drop `.safetensors`, `.gguf`, or `.ckpt` weights into `app/models/` (or download them via the **Model Manager** tab in the UI).
+3. **Generate:** The browser opens automatically at `http://localhost:1420` — select your model and write a prompt.
 
 ---
 
@@ -69,6 +76,7 @@ local-ai-image-generator/
 | **Nvidia** | CUDA | ✅ Native | Maps `sd-cuda.exe` with Nvidia SDK 12 optimizations. |
 | **AMD Radeon** | Vulkan | ✅ Native | Maps `sd-vulkan.exe` with Vulkan API acceleration. |
 | **Intel Arc** | Vulkan | ✅ Native | Maps `sd-vulkan.exe` for Intel hardware. |
+| **Apple Silicon** | Metal | ✅ Native | Maps `sd` (macOS arm64) with Metal GPU acceleration. |
 | **Integrated / None** | CPU | ⚠️ Fallback | Runs on logical CPU threads (slow). |
 
 ---
