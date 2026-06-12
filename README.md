@@ -63,6 +63,7 @@ local-ai-image-generator/
 │   ├── setup.ps1              # Windows automated GPU-detect and environment installer
 │   ├── setup.sh               # macOS automated setup script
 │   ├── reset.ps1              # Windows: cleans runtime environments (keeps models & outputs)
+│   ├── reset.sh               # macOS: cleans runtime environments (keeps models & outputs)
 │   └── serve.cjs              # UI web server and backend lifecycle manager
 └── app/
     ├── frontend/              # UI source code (Vite + React)
@@ -71,13 +72,13 @@ local-ai-image-generator/
     ├── outputs/               # Saved images and parameters metadata
     ├── backend/
     │   ├── win/               # Windows backend binaries (CUDA/Vulkan)
-    │   ├── mac/               # macOS backend binary (Metal)
-    │   └── linux/             # Linux backend binary (Vulkan)
+    │   └── mac/               # macOS backend binary (Metal)
     └── tools/
         ├── node-win/          # Portable Node.js for Windows
-        ├── node-mac/          # Portable Node.js for macOS
-        └── node-linux/        # Portable Node.js for Linux
+        └── node-mac/          # Portable Node.js for macOS
 ```
+
+> **Note:** Linux support is planned for future releases. The backend codebase includes Linux compatibility, but Linux-specific binaries and setup scripts are not yet included in this release.
 
 ---
 
