@@ -53,18 +53,30 @@
 ## 📁 Repository Structure
 ```
 local-ai-image-generator/
-├── start.bat                  # Main double-click entrypoint
+├── start.bat                  # Windows double-click entrypoint
+├── start.sh                   # macOS terminal entrypoint
 ├── LICENSE                    # MIT Open Source license
 ├── .gitignore
-├── README.md                  
+├── README.md                  # This file
+├── TROUBLESHOOTING.md         # Comprehensive troubleshooting guide
 ├── scripts/
-│   ├── setup.ps1              # Automated GPU-detect and environment installer
-│   ├── reset.ps1              # Cleans runtime environments (keeps models & outputs)
+│   ├── setup.ps1              # Windows automated GPU-detect and environment installer
+│   ├── setup.sh               # macOS automated setup script
+│   ├── reset.ps1              # Windows: cleans runtime environments (keeps models & outputs)
 │   └── serve.cjs              # UI web server and backend lifecycle manager
 └── app/
     ├── frontend/              # UI source code (Vite + React)
+    ├── dist/                  # Built frontend files
     ├── models/                # Place weights here (.safetensors, .gguf, .ckpt)
-    └── outputs/               # Saved images and parameters metadata
+    ├── outputs/               # Saved images and parameters metadata
+    ├── backend/
+    │   ├── win/               # Windows backend binaries (CUDA/Vulkan)
+    │   ├── mac/               # macOS backend binary (Metal)
+    │   └── linux/             # Linux backend binary (Vulkan)
+    └── tools/
+        ├── node-win/          # Portable Node.js for Windows
+        ├── node-mac/          # Portable Node.js for macOS
+        └── node-linux/        # Portable Node.js for Linux
 ```
 
 ---
