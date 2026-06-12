@@ -1,6 +1,6 @@
 # 🖼️ Local AI Image Generator
 
-### An easy, zero-setup Stable Diffusion GUI for Windows. Run GGUF & Safetensors models offline without Python configuration.
+### An easy, zero-setup Stable Diffusion GUI for Windows and macOS (Apple Silicon). Run GGUF & Safetensors models offline without Python configuration.
 
 
 
